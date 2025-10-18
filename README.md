@@ -29,6 +29,7 @@ In order, the script:
    - If `vboxdrv` fails to load, it provides hints (reinstall DKMS modules or address Secure Boot).
 
 4. Ensures your user is in the `vboxusers` group:
+   - Creates the group if it’s missing (e.g., VirtualBox packages were installed manually).
    - Adds the invoking user to `vboxusers` if missing. You’ll need to log out and back in once for group membership to apply.
 
 5. Optionally prevents KVM from auto‑loading at boot:

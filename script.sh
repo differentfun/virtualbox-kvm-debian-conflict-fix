@@ -142,16 +142,32 @@ revert_blacklist() {
 }
 
 ensure_vboxusers() {
-  if getent group vboxusers >/dev/null; then
-    if id -nG "${SUDO_USER:-$USER}" | tr ' ' '\n' | grep -qx "vboxusers"; then
-      log "➤ User ${SUDO_USER:-$USER} is already in the vboxusers group."
+  local target_user="${SUDO_USER:-$USER}"
+
+  if [[ -z "$target_user" ]] || ! getent passwd "$target_user" >/dev/null; then
+    warn "➤ Unable to detect invoking user for vboxusers membership."
+    return
+  fi
+
+  if ! getent group vboxusers >/dev/null; then
+    warn "➤ The vboxusers group is missing — attempting to create it."
+    if groupadd --force vboxusers >/dev/null 2>&1; then
+      log "   Created vboxusers group."
     else
-      log "➤ Adding ${SUDO_USER:-$USER} to the vboxusers group…"
-      usermod -aG vboxusers "${SUDO_USER:-$USER}"
-      warn "   Log out/in for the vboxusers membership to apply."
+      warn "   Failed to create vboxusers; VirtualBox may not be installed. Skipping."
+      return
     fi
+  fi
+
+  if id -nG "$target_user" | tr ' ' '\n' | grep -qx "vboxusers"; then
+    log "➤ User $target_user is already in vboxusers."
   else
-    warn "➤ The vboxusers group does not exist. VirtualBox may not be installed."
+    log "➤ Adding $target_user to the vboxusers group…"
+    if usermod -aG vboxusers "$target_user"; then
+      warn "   Log out and back in for the new vboxusers membership to take effect."
+    else
+      warn "   Failed to add $target_user to vboxusers."
+    fi
   fi
 }
 
